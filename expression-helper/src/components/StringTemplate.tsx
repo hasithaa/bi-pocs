@@ -1,47 +1,89 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface StringTemplateProps {
-    onTemplateChange: (template: string) => void;
-    initialValue?: string;
-    onBack?: () => void;
+  onTemplateChange: (template: string) => void;
+  onBack: () => void;
+  existingTemplate?: string;
 }
 
-const StringTemplate: React.FC<StringTemplateProps> = ({ onTemplateChange, initialValue = '', onBack }) => {
-    const [template, setTemplate] = useState<string>(initialValue);
+const StringTemplate: React.FC<StringTemplateProps> = ({ 
+  onTemplateChange, 
+  onBack,
+  existingTemplate 
+}) => {
+  // Extract template content from existing template if available
+  const [template, setTemplate] = useState<string>(() => {
+    if (existingTemplate && existingTemplate.startsWith('string `') && existingTemplate.endsWith('`')) {
+      // Extract content between backticks
+      return existingTemplate.substring(8, existingTemplate.length - 1);
+    }
+    return '';
+  });
+  
+  const [generatedTemplate, setGeneratedTemplate] = useState<string>('');
+  const isUpdating = !!existingTemplate;
 
-    const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const newTemplate = event.target.value;
-        setTemplate(newTemplate);
-        // Format as string template with backticks
-        onTemplateChange(`string \`${newTemplate}\``);
-    };
+  useEffect(() => {
+    // Generate the full template expression
+    setGeneratedTemplate(`string \`${template}\``);
+  }, [template]);
 
-    return (
-        <div className="string-template">
-            <div className="panel-header">
-                {onBack && (
-                    <button className="back-button" onClick={onBack}>
-                        &larr; Back
-                    </button>
-                )}
-                <h3>Create String Template</h3>
-            </div>
-            <textarea
-                value={template}
-                onChange={handleChange}
-                placeholder="Enter your string template here..."
-                rows={5}
-                className="string-template-textarea"
-            />
-            <div className="editor-info">
-                <p>Suggestions:</p>
-                <ul>
-                    <li>${'{variable}'} - Reference existing values</li>
-                    <li>Use multiline for complex templates</li>
-                </ul>
-            </div>
-        </div>
-    );
+  const handleTemplateChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setTemplate(e.target.value);
+  };
+
+  const handleSubmit = () => {
+    onTemplateChange(generatedTemplate);
+    onBack();
+  };
+
+  return (
+    <div className="string-template">
+      <div className="panel-header">
+        <h3>{isUpdating ? 'Update string template' : 'Create new string template'}</h3>
+        <button className="back-button" onClick={onBack}>
+          Back
+        </button>
+      </div>
+
+      <div className="panel-description">
+        Create multi-line string values with string templates. Use <code>${'{}'}</code> syntax to refer to existing variables.
+      </div>
+
+      <div className="input-group">
+        <label htmlFor="template-input">Enter template content:</label>
+        <textarea
+          id="template-input"
+          value={template}
+          onChange={handleTemplateChange}
+          placeholder="Enter template text here..."
+          className="template-textarea"
+          rows={6}
+          autoFocus
+          wrap="soft"
+          spellCheck="false"
+        />
+      </div>
+
+      <div className="output-preview">
+        <div className="output-label">Preview:</div>
+        <div className="output-value">{generatedTemplate}</div>
+      </div>
+
+      <div className="action-buttons">
+        <button 
+          className="submit-button" 
+          onClick={handleSubmit}
+        >
+          {isUpdating ? 'Update Template' : 'Use Template'}
+        </button>
+      </div>
+
+      <div className="helper-note">
+        <p>Tip: Press Enter to create new lines. String templates preserve all whitespace and line breaks.</p>
+      </div>
+    </div>
+  );
 };
 
 export default StringTemplate;

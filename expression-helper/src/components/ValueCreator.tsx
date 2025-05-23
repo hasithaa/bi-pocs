@@ -4,17 +4,52 @@ interface ValueCreatorProps {
   fieldType: string;
   onValueChange: (value: string) => void;
   onBack: () => void;
+  existingValue?: string;
 }
 
-const ValueCreator: React.FC<ValueCreatorProps> = ({ fieldType, onValueChange, onBack }) => {
-  const [value, setValue] = useState('');
-  const [escapedValue, setEscapedValue] = useState('');
+const ValueCreator: React.FC<ValueCreatorProps> = ({ 
+  fieldType, 
+  onValueChange, 
+  onBack, 
+  existingValue 
+}) => {
+  // Decode string literals when initializing
+  const [value, setValue] = useState<string>(() => {
+    if (existingValue !== undefined) {
+      if (existingValue.startsWith('"') && existingValue.endsWith('"')) {
+        try {
+          // Remove outer quotes and parse to handle escape sequences
+          const stringContent = existingValue.slice(1, -1);
+          // Handle common escape sequences
+          return stringContent
+            .replace(/\\"/g, '"')
+            .replace(/\\\\/g, '\\')
+            .replace(/\\n/g, '\n')
+            .replace(/\\t/g, '\t')
+            .replace(/\\r/g, '\r');
+        } catch (e) {
+          console.error("Error parsing string literal:", e);
+          return existingValue;
+        }
+      }
+      return existingValue;
+    }
+    return '';
+  });
+  
+  const [escapedValue, setEscapedValue] = useState<string>('');
+  const isUpdating = existingValue !== undefined;
 
   // Update escaped value when input changes
   useEffect(() => {
     if (fieldType === 'string') {
       // Escape special characters for string literals
-      const escaped = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      const escaped = value
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, '\\n')
+        .replace(/\t/g, '\\t')
+        .replace(/\r/g, '\\r');
       setEscapedValue(`"${escaped}"`);
     } else if (fieldType === 'int') {
       setEscapedValue(value);
@@ -61,7 +96,7 @@ const ValueCreator: React.FC<ValueCreatorProps> = ({ fieldType, onValueChange, o
   return (
     <div className="value-creator">
       <div className="panel-header">
-        <h3>Create a new value</h3>
+        <h3>{isUpdating ? 'Update value' : 'Create a new value'}</h3>
         <button className="back-button" onClick={onBack}>
           Back
         </button>
@@ -85,7 +120,7 @@ const ValueCreator: React.FC<ValueCreatorProps> = ({ fieldType, onValueChange, o
       </div>
 
       <div className="output-preview">
-        <div className="output-label">Output:</div>
+        <div className="output-label">Preview:</div>
         <div className="output-value">{escapedValue}</div>
       </div>
 
@@ -93,9 +128,10 @@ const ValueCreator: React.FC<ValueCreatorProps> = ({ fieldType, onValueChange, o
         <button 
           className="submit-button" 
           onClick={handleSubmit}
-          disabled={value.trim() === ''}
+          // Allow empty strings, only disable if the value is undefined
+          disabled={value === undefined}
         >
-          Use Value
+          {isUpdating ? 'Update Value' : 'Use Value'}
         </button>
       </div>
 

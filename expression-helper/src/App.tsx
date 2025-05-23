@@ -6,6 +6,8 @@ import './styles.css';
 const App: React.FC = () => {
   const [expression, setExpression] = useState<string>('');
   const [showHelper, setShowHelper] = useState<boolean>(false);
+  const [maskExpressions, setMaskExpressions] = useState<boolean>(false);
+  const [showSettings, setShowSettings] = useState<boolean>(false);
   const [selectedNode, setSelectedNode] = useState<string | null>('automation');
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
     'may15': true,
@@ -19,12 +21,13 @@ const App: React.FC = () => {
     'localConnectors': false
   });
   
-  // Example field for testing
+  // Example field for testing - now includes the current value
   const exampleField: Field = {
     name: 'path',
     type: 'string',
     isRequired: true,
-    defaultValue: ''
+    defaultValue: '',
+    value: expression // Pass the current expression value to the helper
   };
 
   const handleExpressionChange = (newExpression: string) => {
@@ -38,6 +41,15 @@ const App: React.FC = () => {
 
   const handleHelperClose = () => {
     setShowHelper(false);
+  };
+
+  const handleMaskChange = (masked: boolean) => {
+    setMaskExpressions(masked);
+    setShowSettings(false); // Close settings after changing
+  };
+  
+  const toggleSettings = () => {
+    setShowSettings(!showSettings);
   };
 
   const toggleExpand = (item: string) => {
@@ -129,7 +141,7 @@ const App: React.FC = () => {
           <span>BALLERINA INTEGRATOR</span>
           <div className="project-actions">
             <button className="icon-button">+</button>
-            <button className="icon-button">⋮</button>
+            <button className="icon-button" onClick={toggleSettings}>⚙️</button>
           </div>
         </div>
 
@@ -211,6 +223,7 @@ const App: React.FC = () => {
               field={exampleField}
               onExpressionChange={handleExpressionChange}
               onClose={handleHelperClose}
+              onMaskChange={handleMaskChange}
             />
           </div>
         )}
@@ -266,7 +279,7 @@ const App: React.FC = () => {
                   type="text" 
                   id="file-path" 
                   className="form-control" 
-                  value={expression}
+                  value={maskExpressions && expression ? "expression" : expression}
                   onClick={handleFieldClick}
                   placeholder="Enter file path"
                   readOnly
@@ -306,6 +319,36 @@ const App: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Settings Popup */}
+      {showSettings && (
+        <div className="settings-overlay" onClick={() => setShowSettings(false)}>
+          <div className="settings-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="settings-header">
+              <h3>Settings</h3>
+              <button className="close-button" onClick={() => setShowSettings(false)}>×</button>
+            </div>
+            <div className="settings-content">
+              <div className="settings-group">
+                <label className="settings-checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    checked={maskExpressions} 
+                    onChange={(e) => handleMaskChange(e.target.checked)}
+                    className="settings-checkbox" 
+                  />
+                  Mask expression values in form fields
+                </label>
+                <div className="settings-description">
+                  Display "expression" instead of actual values in form fields for better readability
+                </div>
+              </div>
+              
+              {/* Additional settings can be added here */}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
