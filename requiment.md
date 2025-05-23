@@ -23,7 +23,10 @@ The Expression Helper is organized into several sections:
 ### Main Options Flow
 
 When a field has an existing expression:
-1. The "Update" option for that expression type appears first
+1. The appropriate "Update" option for that expression type appears first:
+   - "Update value" for simple values
+   - "Update string template" for string templates
+   - "Select different variable" for variable references (e.g., `a.b.c`)
 2. A visual separator shows "or create a new value"
 3. Other creation options are shown below
 
@@ -35,6 +38,7 @@ When a field has no expression:
 - A settings wheel icon (⚙️) in the Ballerina Integrator header provides access to application settings
 - Clicking the settings icon opens a popup with configuration options
 - The expression masking option can be toggled from this settings popup
+- A "Reset All Forms" button allows users to clear all form values and saved expressions
 - When enabled, form fields with expressions display "expression" instead of the actual value
 - This helps simplify the form view when expressions are complex
 - Expressions are only masked when they have a value; empty fields remain unchanged
@@ -51,7 +55,10 @@ When a field has no expression:
    
 2. **Create a string template**: Opens a multiline text box for entering a string template. Suggestions appear when user enters `${}`, referencing existing values in the current scope. The value is saved as `` string `hello ${name}` `` for input like `hello ${name}`.
 
-3. **Select from variables**: Shows list of values in current scope, sorted first by type then by name. For string fields, string variables appear first, followed by other compatible types.
+3. **Select from variables / Select different variable**: Shows list of values in current scope, sorted first by type then by name.
+   - Shows "Select from variables" for new expressions
+   - Shows "Select different variable" when updating an existing variable reference
+   - For string fields, string variables appear first, followed by other compatible types
    - Includes constants, configuration values in scope
    - Includes structured values like arrays, maps, records with compatible member types
    - Shows "Do not find what you are looking for? Try Advanced expression editor" as an escape hatch
@@ -65,7 +72,8 @@ When a field has no expression:
 7. **Advanced expression editor**: Opens a full expression editor with code completion, syntax highlighting, etc.
 
 8. **AI Suggestions**: Contextual value suggestions based on the field type and purpose
-   - For path fields, suggestions include local file paths and an empty string option
+   - Displays 3 AI-generated suggestions relevant to the field type
+   - For path fields, suggestions include local file paths
    - Each suggestion is presented as a clickable button with a magic wand icon
    - Clicking a suggestion immediately applies it to the field
    - AI Suggestions are loaded only once when the helper is opened

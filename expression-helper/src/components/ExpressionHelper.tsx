@@ -36,24 +36,28 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
   const isStringLiteral = hasExistingValue && 
     field?.value?.startsWith('"') && 
     field?.value?.endsWith('"');
+  
+  // Determine if it's a variable reference (like a, a.b, a.b.c) or a method call like a.toString()
+  const isVariableReference = hasExistingValue && 
+    !isStringTemplate && !isStringLiteral &&
+    /^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*(\(\))?)*$/.test(field?.value || '');
 
-  // Modified to include empty string in suggestions
+  // Modified to load only local file path suggestions and limit to 3 items
   useEffect(() => {
     if (field && !suggestionsLoaded.current) {
       setIsLoading(true);
       // Simulate API call
       setTimeout(() => {
         if (field.name === 'path' || field.type === 'string') {
-          // Provide local file path suggestions including empty string
+          // Provide only local file path suggestions, no empty string, limit to 3
           setAiSuggestions([
-            `""`, // Empty string option
             `"./data/sample.json"`, 
             `"./config/settings.json"`,
-            `"/home/user/documents/data.json"`,
-            `"C:/Users/username/Documents/config.json"`
+            `"/home/user/documents/data.json"`
           ]);
         } else if (field.type === 'int') {
-          setAiSuggestions(['42', '100', (field.defaultValue || '0').toString()]);
+          // Limit to 3 numeric suggestions
+          setAiSuggestions(['42', '100', '1000']);
         }
         setIsLoading(false);
         suggestionsLoaded.current = true;
@@ -90,19 +94,18 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
         ) : (
           <>
             {aiSuggestions.length > 0 ? (
-              <div className="suggestions-container">
-                <div className="suggestions-scroll-area">
-                  {aiSuggestions.map((suggestion, index) => (
-                    <button 
-                      key={index} 
-                      onClick={() => handleExpressionChange(suggestion)}
-                      className="suggestion-button"
-                    >
-                      <span className="magic-wand-icon">✨</span>
-                      <span className="suggestion-text">{suggestion}</span>
-                    </button>
-                  ))}
-                </div>
+              <div className="suggestions-button-group">
+                {/* Limit the number of suggestions displayed to 3 */}
+                {aiSuggestions.slice(0, 3).map((suggestion, index) => (
+                  <button 
+                    key={index} 
+                    onClick={() => handleExpressionChange(suggestion)}
+                    className="suggestion-button"
+                  >
+                    <span className="magic-wand-icon">✨</span>
+                    {suggestion}
+                  </button>
+                ))}
               </div>
             ) : (
               <div className="no-suggestions">No suggestions available.</div>
@@ -147,6 +150,7 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
               { name: 'user', type: 'record', isRecord: true, nestedFields: [
                 { name: 'firstName', type: 'string' },
                 { name: 'lastName', type: 'string' },
+                { name: 'age', type: 'int' }, // Add an integer field
                 { name: 'address', type: 'record', isRecord: true, nestedFields: [
                   { name: 'street', type: 'string' },
                   { name: 'city', type: 'string' }
@@ -156,6 +160,7 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
             onSelect={handleExpressionChange}
             fieldType={field?.type}
             onBack={handleBack}
+            currentValue={field?.value}
           />
         );
       case 'configurableValue':
@@ -236,8 +241,18 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
                     </button>
                   )}
                   
-                  {/* If it's not a string template but has a value, show Update value button */}
-                  {!isStringTemplate && (
+                  {/* If it's a variable reference, show Select different variable button */}
+                  {isVariableReference && (
+                    <button 
+                      className="option-button update-button"
+                      onClick={() => handleOptionSelect('selectValue')}
+                    >
+                      Select different variable
+                    </button>
+                  )}
+                  
+                  {/* If it's not a string template or variable reference but has a value, show Update value button */}
+                  {!isStringTemplate && !isVariableReference && (
                     <button 
                       className="option-button update-button"
                       onClick={() => handleOptionSelect('createValue')}
@@ -254,7 +269,7 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
               
               {/* Standard create options */}
               {/* Don't show "Create a new value" if we're already showing "Update value" */}
-              {(!hasExistingValue || isStringTemplate) && (
+              {(!hasExistingValue || isStringTemplate || isVariableReference) && (
                 <button 
                   className="option-button"
                   onClick={() => handleOptionSelect('createValue')}
@@ -273,12 +288,15 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
                 </button>
               )}
               
-              <button 
-                className="option-button"
-                onClick={() => handleOptionSelect('selectValue')}
-              >
-                Select from variables
-              </button>
+              {/* Only show "Select from variables" if we're not already showing "Select different variable" */}
+              {!isVariableReference && (
+                <button 
+                  className="option-button"
+                  onClick={() => handleOptionSelect('selectValue')}
+                >
+                  Select from variables
+                </button>
+              )}
               
               <button 
                 className="option-button"
