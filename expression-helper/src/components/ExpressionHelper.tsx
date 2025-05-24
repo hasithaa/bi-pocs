@@ -6,12 +6,12 @@ import ConfigurableValue from './ConfigurableValue';
 import EnvVariable from './EnvVariable';
 import AdvancedEditor from './AdvancedEditor';
 import FunctionCaller from './FunctionCaller';
-import { Field } from '../types/Field';
+import { Field, SyntaxKind } from '../types/Field';
 import '../styles.css';
 
 interface ExpressionHelperProps {
   field?: Field;
-  onExpressionChange: (expression: string) => void;
+  onExpressionChange: (expression: string, syntaxKind?: SyntaxKind) => void;
   onClose: () => void;
   onMaskChange?: (masked: boolean) => void;
 }
@@ -24,11 +24,64 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
   const [maskExpression, setMaskExpression] = useState<boolean>(false);
   const suggestionsLoaded = useRef<boolean>(false);
   
-  // Determine if current expression is a string template
-  const isStringTemplate = field?.value && 
-    field.value.trim().startsWith('string `') && 
-    field.value.trim().endsWith('`');
+  // Determine syntax kind if not provided by field
+  const determineSyntaxKind = (): SyntaxKind => {
+    if (!field?.value || field.value.trim() === '') {
+      return SyntaxKind.Literal;
+    }
     
+    // If syntax_kind is already available, use it
+    if (field.syntax_kind) {
+      return field.syntax_kind;
+    }
+    
+    const value = field.value.trim();
+    
+    // Check for string template
+    if (value.startsWith('string `') && value.endsWith('`')) {
+      return SyntaxKind.StringTemplate;
+    }
+    
+    // Check for literal (string, numeric, boolean)
+    if ((value.startsWith('"') && value.endsWith('"')) || 
+        /^-?\d+(\.\d+)?$/.test(value) ||
+        value === 'true' || value === 'false' || value === 'null') {
+      return SyntaxKind.Literal;
+    }
+    
+    // Check for Elvis operator
+    if (value.includes('?:')) {
+      return SyntaxKind.Elvis;
+    }
+    
+    // Check for method call
+    if (value.includes('(') && value.includes(')')) {
+      return SyntaxKind.MethodCall;
+    }
+    
+    // Check for optional access
+    if (value.includes('?.')) {
+      return SyntaxKind.OptionalAccess;
+    }
+    
+    // Check for member access
+    if (value.includes('.')) {
+      return SyntaxKind.MemberAccess;
+    }
+    
+    // Default to VarRef
+    return SyntaxKind.VarRef;
+  };
+  
+  // Get current syntax kind
+  const syntaxKind = field?.syntax_kind || determineSyntaxKind();
+
+  // Simplified approach - determine if it's a basic type or more complex
+  const isStringTemplate = syntaxKind === SyntaxKind.StringTemplate;
+  const isLiteral = syntaxKind === SyntaxKind.Literal;
+  const isVariable = syntaxKind === SyntaxKind.VarRef;
+  const isComplexExpression = !isStringTemplate && !isLiteral && !isVariable;
+  
   // Determine if we have any existing value
   const hasExistingValue = field?.value && field.value.trim() !== '';
   
@@ -37,10 +90,10 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
     field?.value?.startsWith('"') && 
     field?.value?.endsWith('"');
   
-  // Determine if it's a variable reference (like a, a.b, a.b.c) or a method call like a.toString()
+  // Determine if it's a variable reference (like a, a.b, a.b.c, a?.b.c) or a method call like a.toString()
   const isVariableReference = hasExistingValue && 
     !isStringTemplate && !isStringLiteral &&
-    /^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*(\(\))?)*$/.test(field?.value || '');
+    /^[a-zA-Z_][a-zA-Z0-9_]*((\.|(\?\.))[a-zA-Z_][a-zA-Z0-9_]*(\(\))?)*$/.test(field?.value || '');
 
   // Modified to load only local file path suggestions and limit to 3 items
   useEffect(() => {
@@ -69,9 +122,54 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
     setSelectedOption(option);
   };
 
-  const handleExpressionChange = (newExpression: string) => {
+  const handleExpressionChange = (newExpression: string, newSyntaxKind?: SyntaxKind) => {
     setExpression(newExpression);
-    onExpressionChange(newExpression);
+    
+    // Determine the syntax kind of the new expression if not provided
+    const detectedSyntaxKind = newSyntaxKind || determineSyntaxKindForExpression(newExpression);
+    
+    // Pass both the new expression and its syntax kind to the parent
+    onExpressionChange(newExpression, detectedSyntaxKind);
+  };
+  
+  // Helper function to determine syntax kind for a new expression
+  const determineSyntaxKindForExpression = (expr: string): SyntaxKind => {
+    if (!expr || expr.trim() === '') {
+      return SyntaxKind.Literal;
+    }
+    
+    const value = expr.trim();
+    
+    if (value.startsWith('string `') && value.endsWith('`')) {
+      return SyntaxKind.StringTemplate;
+    }
+    
+    if ((value.startsWith('"') && value.endsWith('"')) || 
+        /^-?\d+(\.\d+)?$/.test(value) ||
+        value === 'true' || value === 'false' || value === 'null') {
+      return SyntaxKind.Literal;
+    }
+    
+    // Check for Elvis operator with variable reference (VAR_Elvis)
+    if (value.includes('?:') && /^[a-zA-Z_][a-zA-Z0-9_]*((\.|(\?\.))[a-zA-Z_][a-zA-Z0-9_]*)*/.test(value.split('?:')[0].trim())) {
+      return SyntaxKind.VAR_Elvis;
+    } else if (value.includes('?:')) {
+      return SyntaxKind.Elvis;
+    }
+    
+    if (value.includes('(') && value.includes(')')) {
+      return SyntaxKind.MethodCall;
+    }
+    
+    if (value.includes('?.')) {
+      return SyntaxKind.OptionalAccess;
+    }
+    
+    if (value.includes('.')) {
+      return SyntaxKind.MemberAccess;
+    }
+    
+    return SyntaxKind.VarRef;
   };
 
   const handleBack = () => {
@@ -119,6 +217,40 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
   const renderOptionPanel = () => {
     if (!selectedOption) return null;
 
+    // Common variables available in the scope - including configurables
+    const scopeVariables = [
+      { name: 'name', type: 'string' },
+      { name: 'city', type: 'string' },
+      { name: 'country', type: 'string' },
+      { name: 'PORT', type: 'string', isConstant: true },
+      { name: 'config1', type: 'string', isConfigurable: true },
+      { name: 'config2', type: 'string', isConfigurable: true },
+      { name: 'DB_URL', type: 'string', isConfigurable: true },
+      { name: 'API_KEY', type: 'string', isConfigurable: true },
+      { name: 'timeout', type: 'int', isConfigurable: true },
+      { name: 'maxRetries', type: 'int', isConfigurable: true },
+      { name: 'isEnabled', type: 'boolean', isConfigurable: true },
+      { name: 'person', type: 'record', isRecord: true, nestedFields: [
+        { name: 'name', type: 'string' },
+        { name: 'age', type: 'int' },
+        { name: 'address', type: 'record', isRecord: true, nestedFields: [
+          { name: 'street', type: 'string' },
+          { name: 'city', type: 'string' },
+          { name: 'state', type: 'string' },
+          { name: 'country', type: 'record', isRecord: true, isOptional: true, nestedFields: [
+            { name: 'name', type: 'string' },
+            { name: 'code', type: 'string' }
+          ]},
+          { name: 'zip', type: 'string', isOptional: true }
+        ]}
+      ]}
+    ];
+
+    // Filter out just the configurable values for the ConfigurableValue component
+    const configurableValues = scopeVariables
+      .filter(variable => variable.isConfigurable)
+      .map(({ name, type }) => ({ name, type }));
+
     switch (selectedOption) {
       case 'createValue':
         return (
@@ -140,23 +272,7 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
       case 'selectValue':
         return (
           <ValueSelector 
-            values={[
-              { name: 'name', type: 'string' },
-              { name: 'city', type: 'string' },
-              { name: 'country', type: 'string' },
-              { name: 'PORT', type: 'string', isConstant: true },
-              { name: 'config1', type: 'string', isConfigurable: true },
-              { name: 'config2', type: 'string', isConfigurable: true },
-              { name: 'user', type: 'record', isRecord: true, nestedFields: [
-                { name: 'firstName', type: 'string' },
-                { name: 'lastName', type: 'string' },
-                { name: 'age', type: 'int' }, // Add an integer field
-                { name: 'address', type: 'record', isRecord: true, nestedFields: [
-                  { name: 'street', type: 'string' },
-                  { name: 'city', type: 'string' }
-                ]}
-              ]}
-            ]} 
+            values={scopeVariables}
             onSelect={handleExpressionChange}
             fieldType={field?.type}
             onBack={handleBack}
@@ -166,9 +282,10 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
       case 'configurableValue':
         return (
           <ConfigurableValue 
-            existingValues={['config1', 'config2', 'db.url', 'api.key']} 
+            existingValues={configurableValues}
             onValueCreate={handleExpressionChange}
             onBack={handleBack}
+            fieldType={field?.type}
           />
         );
       case 'envVariable':
@@ -192,6 +309,7 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
           <AdvancedEditor 
             onExpressionChange={handleExpressionChange}
             onBack={handleBack}
+            existingExpression={field?.value}
           />
         );
       default:
@@ -231,7 +349,7 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
               {/* If there's an existing value, show update options first */}
               {hasExistingValue && (
                 <>
-                  {/* If it's a string template, show Update string template button first */}
+                  {/* Show appropriate update option based on simplified categories */}
                   {isStringTemplate && field?.type === 'string' && (
                     <button 
                       className="option-button update-button"
@@ -241,8 +359,16 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
                     </button>
                   )}
                   
-                  {/* If it's a variable reference, show Select different variable button */}
-                  {isVariableReference && (
+                  {isLiteral && (
+                    <button 
+                      className="option-button update-button"
+                      onClick={() => handleOptionSelect('createValue')}
+                    >
+                      Update value
+                    </button>
+                  )}
+                  
+                  {isVariable && (
                     <button 
                       className="option-button update-button"
                       onClick={() => handleOptionSelect('selectValue')}
@@ -251,13 +377,12 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
                     </button>
                   )}
                   
-                  {/* If it's not a string template or variable reference but has a value, show Update value button */}
-                  {!isStringTemplate && !isVariableReference && (
+                  {isComplexExpression && (
                     <button 
                       className="option-button update-button"
-                      onClick={() => handleOptionSelect('createValue')}
+                      onClick={() => handleOptionSelect('advancedEditor')}
                     >
-                      Update value
+                      Edit expression
                     </button>
                   )}
                   
@@ -268,8 +393,8 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
               )}
               
               {/* Standard create options */}
-              {/* Don't show "Create a new value" if we're already showing "Update value" */}
-              {(!hasExistingValue || isStringTemplate || isVariableReference) && (
+              {/* Only show "Create a new value" if we're not already showing "Update value" */}
+              {(!hasExistingValue || !isLiteral) && (
                 <button 
                   className="option-button"
                   onClick={() => handleOptionSelect('createValue')}
@@ -278,18 +403,18 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
                 </button>
               )}
               
-              {/* Don't show "Create new string template" if we're already showing "Update string template" */}
+              {/* Only show "Create string template" if we're not already showing "Update string template" */}
               {field?.type === 'string' && (!isStringTemplate) && (
                 <button 
                   className="option-button"
                   onClick={() => handleOptionSelect('stringTemplate')}
                 >
-                  Create new string template
+                  Create string template
                 </button>
               )}
               
               {/* Only show "Select from variables" if we're not already showing "Select different variable" */}
-              {!isVariableReference && (
+              {(!isVariable) && (
                 <button 
                   className="option-button"
                   onClick={() => handleOptionSelect('selectValue')}
@@ -309,7 +434,7 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
                 className="option-button"
                 onClick={() => handleOptionSelect('envVariable')}
               >
-                Select env variable
+                Select environment variable
               </button>
               
               <button 
@@ -323,7 +448,7 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
                 className="option-button"
                 onClick={() => handleOptionSelect('advancedEditor')}
               >
-                Advanced expression editor
+                Open expression editor
               </button>
               
               {/* AI Suggestions at the end */}

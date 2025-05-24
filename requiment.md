@@ -23,12 +23,13 @@ The Expression Helper is organized into several sections:
 ### Main Options Flow
 
 When a field has an existing expression:
-1. The appropriate "Update" option for that expression type appears first:
-   - "Update value" for simple values
+1. The appropriate "Update" option appears first based on expression type:
+   - "Update value" for literals (strings, numbers, booleans)
    - "Update string template" for string templates
-   - "Select different variable" for variable references (e.g., `a.b.c`)
+   - "Select different variable" for simple variable references
+   - "Edit expression" for any other complex expressions
 2. A visual separator shows "or create a new value"
-3. Other creation options are shown below
+3. Other creation options are shown below, excluding the one already available as update option
 
 When a field has no expression:
 1. Only creation options are shown
@@ -63,13 +64,40 @@ When a field has no expression:
    - Includes structured values like arrays, maps, records with compatible member types
    - Shows "Do not find what you are looking for? Try Advanced expression editor" as an escape hatch
 
-4. **Create configurable value**: Opens a text box to name a configurable value, which becomes the expression. Shows existing configurable values to select from.
+4. **Create configurable value**: Opens a form to create or select a configurable value
+   - Create new section includes a text input for the configurable name
+   - Configurable names must start with a letter and contain only letters, numbers, and underscores (no dots or spaces)
+   - Shows a live preview of the expression
+   - Validates input and displays appropriate error messages
+   - Lists existing compatible configurable values that can be selected
+   - Clicking an existing configurable immediately applies it as the expression
 
-5. **Select env variable**: Opens a text box for an environment variable name, creating an expression to read it (e.g., `os:env("name")`). For non-string fields, includes type conversion.
+5. **Select env variable**: Opens a form to select or create environment variable expressions
+   - Allows entering an environment variable name
+   - Validates environment variable names (uppercase, letters, numbers, underscores)
+   - Shows a live preview of the generated expression
+   - For non-string fields, automatically adds the required type conversion
+   - Includes a list of common environment variable suggestions for quick selection
+   - Expressions are generated as `os:getEnv("ENV_NAME")` for string fields
+   - For non-string fields: `check int:fromString(os:getEnv("ENV_NAME"))` 
 
-6. **Call a function**: Opens a form to select and call functions, with appropriate parameters for the chosen function.
+6. **Call a function**: Opens a form to select and call functions
+   - Shows a categorized list of common functions compatible with the field type
+   - Includes a search feature to find specific functions
+   - Selecting a function shows a parameter configuration form
+   - Required parameters are clearly marked
+   - Parameter inputs include descriptions and validation
+   - Shows a preview of the generated function call expression
+   - For string fields, functions with non-string return types automatically add toString()
+   - A note indicates that more advanced function calls are available in the expression editor
 
-7. **Advanced expression editor**: Opens a full expression editor with code completion, syntax highlighting, etc.
+7. **Open expression editor**: Opens a full expression editor
+   - Shows a text area for entering custom Ballerina expressions
+   - Pre-fills the editor with the existing expression when updating
+   - Lists available features and capabilities
+   - Includes a button to apply the expression
+   - Button text changes between "Use Expression" and "Update Expression" depending on context
+   - Follows the same design pattern as other components with back button and consistent styling
 
 8. **AI Suggestions**: Contextual value suggestions based on the field type and purpose
    - Displays 3 AI-generated suggestions relevant to the field type
@@ -85,7 +113,7 @@ When a field has no expression:
 3. **Create configurable value**
 4. **Select env variable**
 5. **Call a function**
-6. **Advanced expression editor**
+6. **Open expression editor**
 7. **AI Suggestions**: Numeric value suggestions
 
 ### Variables List
@@ -114,10 +142,38 @@ Each variable shows its name, type, and an appropriate icon.
 When selecting record field values:
 
 For non-optional form field types:
-- If selected record field paths are all required: generate `x.y.z` syntax
-- If path has optional fields: request a default value and generate `x.y.z ?: defaultValue` syntax
-- If path has optional type fields: use `?.` syntax and require a default value
+- For paths containing optional fields: system uses optional chaining syntax (`?.`)
+- A dialog prompts for a default value when selecting paths with optional fields
+- Generated expression follows the pattern: `person?.address?.country?.name ?: "Unknown"`
+- Preview of the expression is shown before confirming
 
 For optional form field types:
-- No default value is required
+- Optional chaining is still used but no default value is required
+
+### Expression Categorization
+
+The Expression Helper uses simplified expression categorization to provide appropriate update options:
+
+1. **Literal**: Simple values like string literals, numbers, booleans
+   - Example: `"hello"`, `42`, `true`
+   - Update option: "Update value"
+
+2. **StringTemplate**: Ballerina string templates with interpolation
+   - Example: ``string `Hello ${name}!` ``
+   - Update option: "Update string template"
+
+3. **Variable**: Simple variable references
+   - Example: `myVariable`
+   - Update option: "Select different variable"
+
+4. **Complex Expression**: Any other expression types
+   - Examples: 
+     - Member access: `person.name`
+     - Optional chaining: `person?.address?.city`
+     - Method calls: `person.getName()` 
+     - Elvis operators: `person?.name ?: "Unknown"`
+     - Function calls: `getString()`
+   - Update option: "Edit expression"
+
+This simplified categorization ensures appropriate update options are presented without overwhelming the user with too many specialized choices.
 

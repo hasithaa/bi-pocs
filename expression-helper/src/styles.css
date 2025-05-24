@@ -552,6 +552,7 @@ label {
 .no-suggestions {
   padding: 12px;
   color: #666;
+  text-align: center;
 }
 
 /* Simplified AI suggestions styling */
@@ -943,188 +944,74 @@ label {
   border-bottom: 1px solid #ddd;
 }
 
-/* StringTemplate component styles */
-.template-textarea {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 14px;
-  resize: vertical;
-  min-height: 120px; /* Ensure enough height for multiline content */
-  white-space: pre-wrap; /* Preserve whitespace and line breaks */
-  line-height: 1.4; /* Improve readability for multiline text */
-}
-
-/* Add styles for update button and separator */
-.update-button {
-  background-color: #e6f2ff;
-  border-color: #99ccff;
-  font-weight: 500;
-}
-
-.update-button:hover {
-  background-color: #d1e8ff;
-}
-
-.option-separator {
-  position: relative;
-  margin: 16px 0;
-  text-align: center;
-  border-top: 1px solid #ddd;
-  height: 12px;
-}
-
-.separator-text {
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #f5f5f5;
-  padding: 0 12px;
-  font-size: 12px;
-  color: #666;
-}
-
-/* Add styles for the io:fileReadJson node */
-.io-node {
-  background-color: #e1f5fe;
-  border-color: #4fc3f7;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.io-node:hover {
-  box-shadow: 0 0 5px rgba(79, 195, 247, 0.5);
-  transform: translateY(-2px);
-}
-
-/* Add styles for reset button and settings divider */
-.settings-divider {
-  height: 1px;
-  background-color: #ddd;
-  margin: 16px 0;
-}
-
-.settings-section-title {
-  font-size: 15px;
-  margin: 0 0 12px 0;
-  color: #333;
-}
-
-.reset-button {
-  background-color: #f44336;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 16px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.reset-button:hover {
-  background-color: #d32f2f;
-}
-
-/* ValueSelector component styles */
-.value-selector {
+/* AdvancedEditor component styles */
+.advanced-editor {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
-.variables-list-container {
-  flex: 1;
-  overflow-y: auto;
-  margin-top: 16px;
+.editor-container {
+  margin-bottom: 16px;
+}
+
+.expression-textarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 14px;
+  line-height: 1.4;
   border: 1px solid #ddd;
   border-radius: 4px;
-  background-color: white;
+  resize: vertical;
 }
 
-.variables-section {
-  margin-bottom: 12px;
+.expression-textarea.error {
+  border-color: #d32f2f;
 }
 
-.section-label {
-  padding: 8px 12px;
+.editor-features {
+  background-color: #f7f7f7;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.editor-features h4 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #333;
+}
+
+.editor-features ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.editor-features li {
   font-size: 13px;
-  font-weight: 500;
-  background-color: #f5f5f5;
-  border-bottom: 1px solid #ddd;
-  color: #666;
+  margin-bottom: 4px;
+  color: #444;
 }
 
-.variable-item {
+.button-container {
   display: flex;
-  align-items: center;
-  padding: 8px 12px;
-  cursor: pointer;
-  border-bottom: 1px solid #eee;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 16px;
 }
 
-.variable-item:hover {
-  background-color: #f0f7ff;
-}
-
-.variable-icons {
+/* FunctionCaller component styles */
+.function-caller {
   display: flex;
-  margin-right: 12px;
-}
-
-.variable-type-icon,
-.variable-kind-icon {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  background-color: #f0f0f0;
-  border-radius: 3px;
-  margin-right: 4px;
-}
-
-.variable-name {
-  flex: 1;
-  font-size: 14px;
-}
-
-.variable-type {
-  font-size: 12px;
-  color: #666;
-  padding: 2px 6px;
-  background-color: #f0f0f0;
-  border-radius: 3px;
-  margin-left: 8px;
-}
-
-.expand-toggle {
-  background: none;
-  border: none;
-  font-size: 14px;
-  cursor: pointer;
-  padding: 0;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.constant .variable-name {
-  font-weight: bold;
-  color: #0066cc;
-}
-
-.configurable .variable-name {
-  color: #006633;
+  flex-direction: column;
+  height: 100%;
 }
 
 .search-container {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .search-input {
@@ -1135,24 +1022,167 @@ label {
   font-size: 14px;
 }
 
-.no-variables {
+.functions-list-container {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.function-category {
+  margin-bottom: 8px;
+}
+
+.category-header {
+  background-color: #f5f5f5;
+  padding: 8px 12px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  border-bottom: 1px solid #eee;
+}
+
+.function-item {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: none;
+  border-bottom: 1px solid #eee;
+  background: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.function-item:hover {
+  background-color: #f0f7ff;
+}
+
+.function-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.function-name {
+  font-weight: 500;
+  color: #0066cc;
+}
+
+.function-return-type {
+  background-color: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  color: #666;
+}
+
+.function-description {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.no-functions {
   padding: 16px;
   text-align: center;
   color: #666;
+}
+
+/* Function parameter styles */
+.function-details {
+  background-color: #f7f7f7;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.function-signature {
+  font-family: monospace;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.return-type {
+  color: #0066cc;
+  margin-right: 8px;
+}
+
+.function-full-name {
+  font-weight: bold;
+}
+
+.parameters-list {
+  color: #666;
+}
+
+.parameter-type {
+  color: #0066cc;
+  margin-right: 4px;
+}
+
+.parameter-name {
   font-style: italic;
 }
 
-/* Add styles for non-clickable items */
-.variable-item.non-clickable {
-  cursor: default;
-  color: #666;
-  background-color: #f8f8f8;
+.optional-mark {
+  color: #999;
 }
 
-.variable-item.non-clickable:hover {
-  background-color: #f8f8f8;
+.parameters-form {
+  margin-bottom: 16px;
 }
 
-.variable-item.non-clickable .variable-name {
+.parameters-form h4 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+
+.parameter-input-group {
+  margin-bottom: 16px;
+}
+
+.parameter-input-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.required-mark {
+  color: #d32f2f;
+  margin-left: 4px;
+}
+
+.param-type {
+  font-size: 12px;
   color: #666;
+  margin-left: 8px;
+}
+
+.param-description {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.apply-button {
+  background-color: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.no-params {
+  font-style: italic;
+  color: #666;
+  margin-bottom: 16px;
 }

@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import ExpressionHelper from './components/ExpressionHelper';
-import { Field } from './types/Field';
+import { Field, SyntaxKind } from './types/Field';
 import './styles.css';
 
 const App: React.FC = () => {
-  const [expression, setExpression] = useState<string>(() => {
-    // Load saved expression from localStorage on initial render
-    const savedExpression = localStorage.getItem('savedExpression');
-    return savedExpression || '';
-  });
+  const [expression, setExpression] = useState<string>('');
+  const [syntaxKind, setSyntaxKind] = useState<SyntaxKind>(SyntaxKind.Literal);
   const [showHelper, setShowHelper] = useState<boolean>(false);
   const [showForm, setShowForm] = useState<boolean>(false);
   const [maskExpressions, setMaskExpressions] = useState<boolean>(false);
@@ -26,13 +23,14 @@ const App: React.FC = () => {
     'localConnectors': false
   });
   
-  // Example field for testing - now includes the current value
+  // Example field for testing - now includes syntax_kind
   const exampleField: Field = {
     name: 'path',
     type: 'string',
     isRequired: true,
     defaultValue: '',
-    value: expression // Pass the current expression value to the helper
+    value: expression,
+    syntax_kind: syntaxKind
   };
 
   // Save expression to localStorage whenever it changes
@@ -40,9 +38,12 @@ const App: React.FC = () => {
     localStorage.setItem('savedExpression', expression);
   }, [expression]);
 
-  const handleExpressionChange = (newExpression: string) => {
+  const handleExpressionChange = (newExpression: string, newSyntaxKind?: SyntaxKind) => {
     setExpression(newExpression);
-    console.log('Expression updated:', newExpression);
+    if (newSyntaxKind) {
+      setSyntaxKind(newSyntaxKind);
+    }
+    console.log('Expression updated:', newExpression, 'Syntax Kind:', newSyntaxKind || syntaxKind);
   };
 
   const handleNodeClick = () => {
