@@ -186,32 +186,137 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
 
   const renderSuggestions = () => {
     return (
-      <div className="expression-suggestions">
-        {isLoading ? (
-          <div className="loading-placeholder">Loading suggestions...</div>
-        ) : (
-          <>
-            {aiSuggestions.length > 0 ? (
-              <div className="suggestions-button-group">
-                {/* Limit the number of suggestions displayed to 3 */}
-                {aiSuggestions.slice(0, 3).map((suggestion, index) => (
-                  <button 
-                    key={index} 
-                    onClick={() => handleExpressionChange(suggestion)}
-                    className="suggestion-button"
-                  >
-                    <span className="magic-wand-icon">✨</span>
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="no-suggestions">No suggestions available.</div>
-            )}
-          </>
-        )}
-      </div>
+      <>
+        <div className="expression-suggestions">
+          {isLoading ? (
+            <div className="loading-placeholder">Loading suggestions...</div>
+          ) : (
+            <>
+              {aiSuggestions.length > 0 ? (
+                <div className="suggestions-button-group">
+                  {/* Limit the number of suggestions displayed to 3 */}
+                  {aiSuggestions.slice(0, 3).map((suggestion, index) => (
+                    <button 
+                      key={index} 
+                      onClick={() => handleExpressionChange(suggestion)}
+                      className="suggestion-button"
+                    >
+                      <span className="magic-wand-icon">✨</span>
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="no-suggestions">No suggestions available.</div>
+              )}
+            </>
+          )}
+        </div>
+        
+        {/* Add Common Operations section after AI suggestions */}
+        {renderCommonOperations()}
+      </>
     );
+  };
+  
+  // Add common operations based on field type
+  const renderCommonOperations = () => {
+    if (field?.type === 'string') {
+      return (
+        <div className="common-operations">
+          <h4 className="common-operations-title">Common String Operations</h4>
+          <div className="common-operations-grid">
+            <button 
+              className="operation-button"
+              onClick={() => handleExpressionChange(`string:concat(${field.value || '"string1"'}, ${field.value ? field.value : '"string2"'})`)}
+            >
+              <span className="operation-icon">🔗</span>
+              <span className="operation-text">String Concat</span>
+            </button>
+            <button 
+              className="operation-button"
+              onClick={() => handleExpressionChange(`string:substring(${field.value || '"Hello World"'}, 0, 5)`)}
+            >
+              <span className="operation-icon">✂️</span>
+              <span className="operation-text">Substring</span>
+            </button>
+            <button 
+              className="operation-button"
+              onClick={() => handleExpressionChange(`string:trim(${field.value || '"  text  "'})`)}
+            >
+              <span className="operation-icon">🧹</span>
+              <span className="operation-text">Trim</span>
+            </button>
+            <button 
+              className="operation-button"
+              onClick={() => handleExpressionChange(`string:toLowerAscii(${field.value || '"TEXT"'})`)}
+            >
+              <span className="operation-icon">⬇️</span>
+              <span className="operation-text">To Lowercase</span>
+            </button>
+            <button 
+              className="operation-button"
+              onClick={() => handleExpressionChange(`string:toUpperAscii(${field.value || '"text"'})`)}
+            >
+              <span className="operation-icon">⬆️</span>
+              <span className="operation-text">To Uppercase</span>
+            </button>
+          </div>
+        </div>
+      );
+    } else if (field?.type === 'int') {
+      return (
+        <div className="common-operations">
+          <h4 className="common-operations-title">Common Integer Operations</h4>
+          <div className="common-operations-grid">
+            <button 
+              className="operation-button"
+              onClick={() => handleExpressionChange(`${field.value || '0'} + 1`)}
+            >
+              <span className="operation-icon">➕</span>
+              <span className="operation-text">Add</span>
+            </button>
+            <button 
+              className="operation-button"
+              onClick={() => handleExpressionChange(`${field.value || '0'} - 1`)}
+            >
+              <span className="operation-icon">➖</span>
+              <span className="operation-text">Subtract</span>
+            </button>
+            <button 
+              className="operation-button"
+              onClick={() => handleExpressionChange(`${field.value || '0'} * 2`)}
+            >
+              <span className="operation-icon">✖️</span>
+              <span className="operation-text">Multiply</span>
+            </button>
+            <button 
+              className="operation-button"
+              onClick={() => handleExpressionChange(`${field.value || '10'} / 2`)}
+            >
+              <span className="operation-icon">➗</span>
+              <span className="operation-text">Divide</span>
+            </button>
+            <button 
+              className="operation-button"
+              onClick={() => handleExpressionChange(`${field.value || '5'} % 2`)}
+            >
+              <span className="operation-icon">🔄</span>
+              <span className="operation-text">Modulo</span>
+            </button>
+            <button 
+              className="operation-button"
+              onClick={() => handleExpressionChange(`lang:absInt(${field.value || '-5'})`)}
+            >
+              <span className="operation-icon">📊</span>
+              <span className="operation-text">Absolute Value</span>
+            </button>
+          </div>
+        </div>
+      );
+    }
+    
+    return null;
   };
 
   const renderOptionPanel = () => {
@@ -451,7 +556,7 @@ const ExpressionHelper: React.FC<ExpressionHelperProps> = ({ field, onExpression
                 Open expression editor
               </button>
               
-              {/* AI Suggestions at the end */}
+              {/* AI Suggestions and Common Operations at the end */}
               {renderSuggestions()}
             </div>
           </div>

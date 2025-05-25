@@ -147,6 +147,32 @@ const ValueSelector: React.FC<ValueSelectorProps> = ({
     setDefaultValue('""');
   };
 
+  // Determine variable type compatibility with field type
+  const isCompatibleType = (varType: string, fieldType: string | undefined): boolean => {
+    if (!fieldType) return true;
+    
+    // For string fields, most types can be converted
+    if (fieldType === 'string') return true;
+    
+    // For int fields, only int/integer types are directly compatible
+    if (fieldType === 'int' || fieldType === 'integer') {
+      return varType === 'int' || varType === 'integer';
+    }
+    
+    // For boolean fields, only boolean type is compatible
+    if (fieldType === 'boolean') {
+      return varType === 'boolean';
+    }
+    
+    // For float/decimal fields
+    if (fieldType === 'float' || fieldType === 'decimal') {
+      return ['float', 'decimal', 'int', 'integer'].includes(varType);
+    }
+    
+    // Default case - exact type match
+    return varType === fieldType;
+  };
+
   // Sort and filter values based on type compatibility and search query
   const sortedValues = useMemo(() => {
     // Filter values based on search query
@@ -225,17 +251,16 @@ const ValueSelector: React.FC<ValueSelectorProps> = ({
     const isRecord = value.isRecord && value.nestedFields?.length;
     const isExpanded = expandedRecords[parentPath ? `${parentPath}.${value.name}` : value.name];
     
-    // Check if this is an integer or boolean field
-    const isInteger = value.type === 'int' || value.type === 'integer';
-    const isBoolean = value.type === 'boolean';
-    const isNumeric = isInteger || ['float', 'decimal'].includes(value.type);
+    // Check if variable type is compatible with field type
+    const isDirectlyCompatible = isCompatibleType(value.type, fieldType);
     
-    // For string target fields, numeric and boolean values need conversion
-    const needsConversion = fieldType === 'string' && (isNumeric || isBoolean);
+    // For string target fields, we allow conversion methods for non-string types
+    // For non-string fields, we disable incompatible types completely
+    const needsConversion = fieldType === 'string' && !isDirectlyCompatible;
+    const isIncompatible = fieldType !== 'string' && !isDirectlyCompatible && !isRecord;
     
     // Determine if the item should be clickable
-    // Non-string values should not be clickable when target field is string
-    const isClickable = isRecord || !needsConversion;
+    const isClickable = isRecord || !needsConversion && !isIncompatible;
     
     // Full path for this item
     const fullPath = parentPath ? `${parentPath}.${value.name}` : value.name;
@@ -243,7 +268,7 @@ const ValueSelector: React.FC<ValueSelectorProps> = ({
     return (
       <div key={`${fullPath}-${depth}`} className="variable-item-container">
         <div 
-          className={`variable-item ${value.isConstant ? 'constant' : ''} ${value.isConfigurable ? 'configurable' : ''} ${!isClickable ? 'non-clickable' : ''} ${value.isOptional ? 'optional-field' : ''}`}
+          className={`variable-item ${value.isConstant ? 'constant' : ''} ${value.isConfigurable ? 'configurable' : ''} ${!isClickable ? 'non-clickable' : ''} ${isIncompatible ? 'incompatible' : ''} ${value.isOptional ? 'optional-field' : ''}`}
           onClick={() => {
             if (isRecord) {
               toggleRecord(fullPath);
@@ -270,6 +295,10 @@ const ValueSelector: React.FC<ValueSelectorProps> = ({
             }}>
               {isExpanded ? '▾' : '▸'}
             </button>
+          )}
+          
+          {isIncompatible && !isRecord && (
+            <span className="incompatible-message" title="Incompatible type">⚠️</span>
           )}
         </div>
         

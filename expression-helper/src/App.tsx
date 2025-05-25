@@ -4,8 +4,15 @@ import { Field, SyntaxKind } from './types/Field';
 import './styles.css';
 
 const App: React.FC = () => {
-  const [expression, setExpression] = useState<string>('');
-  const [syntaxKind, setSyntaxKind] = useState<SyntaxKind>(SyntaxKind.Literal);
+  // Instead of a single expression value, maintain a map of expressions by node type
+  const [expressionsByNode, setExpressionsByNode] = useState<Record<string, string>>({
+    abs: "-42", // Default value for abs node
+    fileReadJson: "" // Default empty value for fileReadJson node
+  });
+  const [syntaxKindByNode, setSyntaxKindByNode] = useState<Record<string, SyntaxKind>>({
+    abs: SyntaxKind.Literal,
+    fileReadJson: SyntaxKind.Literal
+  });
   const [showHelper, setShowHelper] = useState<boolean>(false);
   const [showForm, setShowForm] = useState<boolean>(false);
   const [maskExpressions, setMaskExpressions] = useState<boolean>(false);
@@ -23,27 +30,62 @@ const App: React.FC = () => {
     'localConnectors': false
   });
   
-  // Example field for testing - now includes syntax_kind
+  // Get the current expression based on selected node
+  const getCurrentExpression = () => {
+    return selectedNode ? expressionsByNode[selectedNode] || "" : "";
+  };
+  
+  // Get the current syntax kind based on selected node
+  const getCurrentSyntaxKind = () => {
+    return selectedNode ? syntaxKindByNode[selectedNode] || SyntaxKind.Literal : SyntaxKind.Literal;
+  };
+  
+  // Example field for testing - now uses node-specific values
   const exampleField: Field = {
-    name: 'path',
-    type: 'string',
+    name: selectedNode === 'abs' ? 'n' : 'path',
+    type: selectedNode === 'abs' ? 'int' : 'string',
     isRequired: true,
     defaultValue: '',
-    value: expression,
-    syntax_kind: syntaxKind
+    value: getCurrentExpression(),
+    syntax_kind: getCurrentSyntaxKind()
   };
 
   // Save expression to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('savedExpression', expression);
-  }, [expression]);
+    if (selectedNode === 'fileReadJson') {
+      localStorage.setItem('savedExpression', expressionsByNode.fileReadJson || "");
+    }
+  }, [expressionsByNode.fileReadJson]);
+
+  // Load saved expression from localStorage
+  useEffect(() => {
+    const savedValue = localStorage.getItem('savedExpression');
+    if (savedValue) {
+      setExpressionsByNode(prev => ({
+        ...prev,
+        fileReadJson: savedValue
+      }));
+    }
+  }, []);
 
   const handleExpressionChange = (newExpression: string, newSyntaxKind?: SyntaxKind) => {
-    setExpression(newExpression);
-    if (newSyntaxKind) {
-      setSyntaxKind(newSyntaxKind);
+    if (selectedNode) {
+      // Update the expression for the current node only
+      setExpressionsByNode(prev => ({
+        ...prev,
+        [selectedNode]: newExpression
+      }));
+      
+      // Update syntax kind if provided
+      if (newSyntaxKind) {
+        setSyntaxKindByNode(prev => ({
+          ...prev,
+          [selectedNode]: newSyntaxKind
+        }));
+      }
+      
+      console.log(`Expression updated for node ${selectedNode}:`, newExpression, 'Syntax Kind:', newSyntaxKind || getCurrentSyntaxKind());
     }
-    console.log('Expression updated:', newExpression, 'Syntax Kind:', newSyntaxKind || syntaxKind);
   };
 
   const handleNodeClick = () => {
@@ -70,7 +112,7 @@ const App: React.FC = () => {
   
   const handleSave = () => {
     // Save the form and close it
-    console.log('Form saved with expression:', expression);
+    console.log('Form saved with expression:', getCurrentExpression());
     setShowForm(false);
     // Ensure helper is closed when saving
     setShowHelper(false);
@@ -85,8 +127,11 @@ const App: React.FC = () => {
   };
   
   const handleResetForms = () => {
-    // Clear the expression value
-    setExpression('');
+    // Clear all expressions
+    setExpressionsByNode({
+      abs: "",
+      fileReadJson: ""
+    });
     
     // Clear from localStorage
     localStorage.removeItem('savedExpression');
@@ -144,43 +189,7 @@ const App: React.FC = () => {
   // Add the renderVariablesSection function
   const renderVariablesSection = () => {
     return (
-      <div className="variables-section">
-        <div className="variables-header">
-          <span className="section-title">Variables</span>
-        </div>
-        <div className="variables-list">
-          <div className="variable-item">
-            <span className="variable-icon">Aa</span>
-            <span className="variable-name">name</span>
-            <span className="variable-type">string</span>
-          </div>
-          <div className="variable-item">
-            <span className="variable-icon">Aa</span>
-            <span className="variable-name">city</span>
-            <span className="variable-type">string</span>
-          </div>
-          <div className="variable-item">
-            <span className="variable-icon">Aa</span>
-            <span className="variable-name">country</span>
-            <span className="variable-type">string</span>
-          </div>
-          <div className="variable-item">
-            <span className="variable-icon">123</span>
-            <span className="variable-name">age</span>
-            <span className="variable-type">int</span>
-          </div>
-          <div className="variable-item constant">
-            <span className="variable-icon">Aa</span>
-            <span className="variable-name">CODE</span>
-            <span className="variable-type">string</span>
-          </div>
-          <div className="variable-item configurable">
-            <span className="variable-icon">Aa</span>
-            <span className="variable-name">port</span>
-            <span className="variable-type">string</span>
-          </div>
-        </div>
-      </div>
+      <div></div>
     );
   };
 
@@ -255,16 +264,32 @@ const App: React.FC = () => {
             </div>
             <div className="diagram-connector"></div>
             
-            {/* Add new io:fileReadJson node */}
+            {/* Add new lang.int:abs node */}
+            <div 
+              className="diagram-node function"
+              onClick={() => {
+                setSelectedNode('abs');
+                handleNodeClick();
+              }}
+            >
+              <span className="node-icon">ƒ</span>
+              lang.int:abs<br/>
+              <span className="node-code">intResult = abs(n)</span>
+            </div>
+            <div className="diagram-connector"></div>
+            
+            {/* io:fileReadJson node */}
             <div 
               className="diagram-node io-node"
-              onClick={handleNodeClick} // Open right panel when clicked
+              onClick={() => {
+                setSelectedNode('fileReadJson');
+                handleNodeClick();
+              }}
             >
               <span className="node-icon">📂</span>
               io:fileReadJson<br/>
               <span className="node-code">jsonResult = readFile(path)</span>
             </div>
-            <div className="diagram-connector"></div>
             
             <div className="diagram-node task-empty">
               Select node from node panel
@@ -293,92 +318,169 @@ const App: React.FC = () => {
           
           <div className="form-panel">
             <div className="form-panel-header">
-              <h2>io : fileReadJson</h2>
+              <h2>
+                {selectedNode === 'abs' ? 'lang.int : abs' : 'io : fileReadJson'}
+              </h2>
               <button className="close-form" onClick={handleFormClose}>×</button>
             </div>
 
             <div className="form-panel-content">
-              <div className="form-description">
-                Reads file content as a JSON.
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="variable-name">
-                  Variable name*
-                  <span className="sub-label">Name of the variable</span>
-                </label>
-                <input 
-                  type="text" 
-                  id="variable-name" 
-                  className="form-control" 
-                  value="jsonResult"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="variable-type">
-                  Variable Type*
-                  <span className="sub-label">Type of the variable</span>
-                </label>
-                <div className="form-control-with-icon">
-                  <input 
-                    type="text" 
-                    id="variable-type" 
-                    className="form-control" 
-                    value="json"
-                    readOnly
-                  />
-                  <span className="lock-icon-small">🔒</span>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="file-path">
-                  Path*
-                  <span className="sub-label">The path of the JSON file.</span>
-                </label>
-                <div className="form-control-with-helper">
-                  <input 
-                    type="text" 
-                    id="file-path" 
-                    className="form-control" 
-                    value={expression}
-                    onClick={handleFieldClick}
-                    placeholder="Enter file path"
-                    readOnly
-                  />
-                  <button 
-                    className="helper-button" 
-                    onClick={handleFieldClick}
-                  >
-                    Ex
-                  </button>
-                </div>
-                {!expression && (
-                  <div className="field-error">
-                    <span className="error-icon">⚠️</span> missing expression
+              {selectedNode === 'abs' ? (
+                // Form for lang.int:abs
+                <>
+                  <div className="form-description">
+                    Returns the absolute value of an int value.
                   </div>
-                )}
-              </div>
 
-              <div className="form-group">
-                <div className="form-section-header">
-                  <span>Advanced Configurations</span>
-                  <span className="collapse-icon">▾</span>
-                </div>
-                
-                <div className="checkbox-group">
-                  <input type="checkbox" id="check-error" />
-                  <label htmlFor="check-error">
-                    Check Error
-                    <span className="sub-label">Trigger error flow</span>
-                  </label>
-                </div>
-              </div>
+                  <div className="form-group">
+                    <label htmlFor="variable-name">
+                      Variable name*
+                      <span className="sub-label">Name of the variable</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      id="variable-name" 
+                      className="form-control" 
+                      value="intResult"
+                    />
+                  </div>
 
-              <div className="form-actions">
-                <button className="save-button" onClick={handleSave}>Save</button>
-              </div>
+                  <div className="form-group">
+                    <label htmlFor="variable-type">
+                      Variable Type*
+                      <span className="sub-label">Type of the variable</span>
+                    </label>
+                    <div className="form-control-with-icon">
+                      <input 
+                        type="text" 
+                        id="variable-type" 
+                        className="form-control" 
+                        value="int"
+                        readOnly
+                      />
+                      <span className="lock-icon-small">🔒</span>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="int-value">
+                      n*
+                      <span className="sub-label">int value to be operated on.</span>
+                    </label>
+                    <div className="form-control-with-helper">
+                      <input 
+                        type="text" 
+                        id="int-value" 
+                        className="form-control" 
+                        value={expressionsByNode.abs}
+                        onClick={handleFieldClick}
+                        placeholder="Enter int value"
+                        readOnly
+                      />
+                      <button 
+                        className="helper-button" 
+                        onClick={handleFieldClick}
+                      >
+                        Ex
+                      </button>
+                    </div>
+                    {!expressionsByNode.abs && (
+                      <div className="field-error">
+                        <span className="error-icon">⚠️</span> missing expression
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="form-actions">
+                    <button className="save-button" onClick={handleSave}>Save</button>
+                  </div>
+                </>
+              ) : (
+                // Form for io:fileReadJson (existing form)
+                <>
+                  <div className="form-description">
+                    Reads file content as a JSON.
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="variable-name">
+                      Variable name*
+                      <span className="sub-label">Name of the variable</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      id="variable-name" 
+                      className="form-control" 
+                      value="jsonResult"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="variable-type">
+                      Variable Type*
+                      <span className="sub-label">Type of the variable</span>
+                    </label>
+                    <div className="form-control-with-icon">
+                      <input 
+                        type="text" 
+                        id="variable-type" 
+                        className="form-control" 
+                        value="json"
+                        readOnly
+                      />
+                      <span className="lock-icon-small">🔒</span>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="file-path">
+                      Path*
+                      <span className="sub-label">The path of the JSON file.</span>
+                    </label>
+                    <div className="form-control-with-helper">
+                      <input 
+                        type="text" 
+                        id="file-path" 
+                        className="form-control" 
+                        value={expressionsByNode.fileReadJson}
+                        onClick={handleFieldClick}
+                        placeholder="Enter file path"
+                        readOnly
+                      />
+                      <button 
+                        className="helper-button" 
+                        onClick={handleFieldClick}
+                      >
+                        Ex
+                      </button>
+                    </div>
+                    {!expressionsByNode.fileReadJson && (
+                      <div className="field-error">
+                        <span className="error-icon">⚠️</span> missing expression
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <div className="form-section-header">
+                      <span>Advanced Configurations</span>
+                      <span className="collapse-icon">▾</span>
+                    </div>
+                    
+                    <div className="checkbox-group">
+                      <input type="checkbox" id="check-error" />
+                      <label htmlFor="check-error">
+                        Check Error
+                        <span className="sub-label">Trigger error flow</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="form-actions">
+                    <button className="save-button" onClick={handleSave}>Save</button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

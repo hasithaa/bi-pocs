@@ -106,6 +106,13 @@ When a field has no expression:
    - Clicking a suggestion immediately applies it to the field
    - AI Suggestions are loaded only once when the helper is opened
 
+9. **Common Operations**: Quick access to common operations based on field type
+   - For string fields: concat, substring, trim, toLower, toUpper
+   - For integer fields: add, subtract, multiply, divide, modulo, absolute value
+   - Each operation has a relevant icon and descriptive text
+   - Clicking an operation applies it as an expression, using the current value as input if available
+   - Operations are organized in a grid below the AI suggestions
+
 ### Options for Integer Field Type
 
 1. **Create a new value / Update value**: Text box for entering a number
